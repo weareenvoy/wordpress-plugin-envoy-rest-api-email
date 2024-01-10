@@ -1,0 +1,312 @@
+<?php
+/**
+ * The work in this file is based around the output of an autogenerator:
+ * https://jeremyhixon.com/tool/wordpress-option-page-generator/
+ * These contents were heavily modified after generation so avoid copy/pasting new output from the generator.
+ */
+
+class EnvoyRestAPIEmailRoutingByState {
+
+	static $MAXIMUM_MAPPING_VALUES_OF_FORM_CATEGORY_TO_EMAIL_ADDRESS = 5;
+	static $NS			=	'envoy_rest_api_email_routing_by_state';
+	static $NS_HANDLE	=	'envoy-rest-api-email-routing-by-state';
+
+	private $envoy_rest_api_email_routing_by_state_options;
+
+	public function __construct() {
+		add_action( 'admin_menu', array( $this, sprintf('%s_add_plugin_page', SELF::$NS) ) );
+		add_action( 'admin_init', array( $this, sprintf('%s_page_init', SELF::$NS) ) );
+	}
+
+	public function envoy_rest_api_email_routing_by_state_add_plugin_page() {
+
+		//  -- This adds a top-level menu item --
+		//	add_menu_page(
+		//		'Envoy Rest API - Email Routing By State', // page_title
+		//		'Envoy Rest API - Email Routing By State', // menu_title
+		//		'manage_options', // capability
+		//		'envoy-rest-api-email-routing-by-state', // menu_slug
+		//		array( $this, 'envoy_rest_api_email_routing_by_state_create_admin_page' ), // function
+		//		'dashicons-admin-generic', // icon_url
+		//		80 // position
+		//	);
+
+		//  -- This adds a sub-level menu item under an existing top-level menu item --
+		add_submenu_page(
+			is_network_admin() ? 'settings.php' : 'options-general.php' , // parent_slug
+			'Envoy Rest API - Email Routing By State', // page_title
+			'Form Routing Emails', // menu_title
+			'manage_options',
+			SELF::$NS_HANDLE, // menu_slug
+			array( $this, sprintf('%s_create_admin_page', SELF::$NS) ), // function
+			80 // position
+		);
+	}
+
+	//	-----------
+	//	This merely is responsible for rendering the wrapper hml form contains input fields in the admin area.
+	//	-----------
+	public function envoy_rest_api_email_routing_by_state_create_admin_page() {
+		$this->envoy_rest_api_email_routing_by_state_options = get_option( sprintf('%s_option_name', SELF::$NS) ); ?>
+
+		<div class="wrap">
+			<h2>Envoy Rest API - Email Routing By State</h2>
+			<p></p>
+			<?php settings_errors(); ?>
+
+			<form method="post" action="options.php">
+				<?php
+					settings_fields( sprintf('%s_option_group', SELF::$NS) );
+					do_settings_sections( sprintf('%s-admin', SELF::$NS_HANDLE) );
+					submit_button();
+				?>
+			</form>
+		</div>
+	<?php }
+
+	//	-------
+	//	This is responsible for (in reverse order):
+	//		-	Creating an admin setting field
+	//		-	The setting section that contains that field
+	//		-	The setting configuration that connects the field to the saved value in the database
+	//	-------
+	public function envoy_rest_api_email_routing_by_state_page_init() {
+		register_setting(
+			sprintf('%s_option_group', SELF::$NS), // option_group
+			sprintf('%s_option_name', SELF::$NS), // option_name
+			array( $this, sprintf('%s_sanitize', SELF::$NS) ) // sanitize_callback
+		);
+
+
+		//	----------------------
+		//	Email Sending Settings
+		//	----------------------
+		add_settings_section(
+			sprintf('%s_setting_section_email_sending', SELF::$NS),		// id
+			'⚙️ Email Sending ⚙️',									//	title
+			array( $this, sprintf('%s_section_info', SELF::$NS) ),	// callback
+			sprintf('%s-admin', SELF::$NS_HANDLE)					// page
+		);
+
+		add_settings_field(
+			'send_email_from_name_0',								// id
+			'📇 Send Email From Name',								// title
+			array( $this, 'send_email_from_name_0_callback'),		// callback
+			sprintf('%s-admin', SELF::$NS_HANDLE),					// page
+			sprintf('%s_setting_section_email_sending', SELF::$NS)	// section
+		);
+
+		add_settings_field(
+			'send_email_from_email_0',								// id
+			'📧 Send Email From Email',								// title
+			array( $this, 'send_email_from_email_0_callback' ),		// callback
+			sprintf('%s-admin', SELF::$NS_HANDLE),					// page
+			sprintf('%s_setting_section_email_sending', SELF::$NS)	// section
+		);
+
+		//	----------------------------
+		//	Testing & Debugging Settings
+		//	----------------------------
+		add_settings_section(
+			sprintf('%s_setting_section_testing', SELF::$NS),		// id
+			'⚙️ Testing & Debugging ⚙️',									//	title
+			array( $this, sprintf('%s_section_info', SELF::$NS) ),	// callback
+			sprintf('%s-admin', SELF::$NS_HANDLE)					// page
+		);
+
+		add_settings_field(
+			'test_email_address_0',								// id
+			'⚠️ Test Email - Debugging Override',				// title
+			array( $this, 'test_email_address_0_callback' ),	// callback
+			sprintf('%s-admin', SELF::$NS_HANDLE),				// page
+			sprintf('%s_setting_section_testing', SELF::$NS)	// section
+		);
+
+		//	----------------------
+		//	Email Mapping Settings
+		//	----------------------
+		add_settings_section(
+			sprintf('%s_setting_section_mappings_general', SELF::$NS),		// id
+			'⚙️ Mappings: General ⚙️',									//	title
+			array( $this, sprintf('%s_section_info', SELF::$NS) ),	// callback
+			sprintf('%s-admin', SELF::$NS_HANDLE)					// page
+		);
+
+		add_settings_field(
+			'default_email_address_0',											// id
+			'📧 Default Category Email Address',			// title
+			array( $this, 'default_category_email_address_0_callback'),	// callback
+			sprintf('%s-admin', SELF::$NS_HANDLE),				// page
+			sprintf('%s_setting_section_mappings_general', SELF::$NS)			// section
+		);
+
+		//	-------------------------------------------------------
+		//	Table of 'Category' field value to Email Routing Values
+		//	-------------------------------------------------------
+		add_settings_section(
+			sprintf('%s_setting_section_mapping_of_category_to_email', SELF::$NS), // id
+			"⚙️ Mappings: Form 'category' → Recipient Emails ⚙️", // title
+			array( $this, sprintf('%s_section_info', SELF::$NS) ), // callback
+			sprintf('%s-admin', SELF::$NS_HANDLE) // page
+		);
+		//	https://wordpress.stackexchange.com/questions/21256/how-to-pass-arguments-from-add-settings-field-to-the-callback-function
+		for( $i=0; $i<SELF::$MAXIMUM_MAPPING_VALUES_OF_FORM_CATEGORY_TO_EMAIL_ADDRESS; $i++):
+
+			//	The form's 'category' value that needs to trigger the email(s) being sent
+			$_field_id = sprintf('category_%s_form_value_0', $i);
+			$_arguments_given_to_callback = [
+				'id' => $i,
+				'field_id' => $_field_id
+			];
+			add_settings_field(
+				$_field_id,											// id
+				sprintf('%s - Category Target Value🔍', $i+1),			// title
+				array( $this, 'category_field_value_callback'),		// callback
+				sprintf('%s-admin', SELF::$NS_HANDLE),				// page
+				sprintf('%s_setting_section_mapping_of_category_to_email', SELF::$NS),			// section
+				$_arguments_given_to_callback
+			);
+
+			//	The email address(es) to send to for this form 'category' value
+			$_field_id = sprintf('category_%s_email_address_0', $i);
+			$_arguments_given_to_callback = [
+				'id' => $i,
+				'field_id' => $_field_id
+			];
+			add_settings_field(
+				$_field_id,											// id
+				sprintf('%s - Category Email Address📧', $i+1),		// title
+				array( $this, 'category_email_address_callback'),	// callback
+				sprintf('%s-admin', SELF::$NS_HANDLE),				// page
+				sprintf('%s_setting_section_mapping_of_category_to_email', SELF::$NS),			// section
+				$_arguments_given_to_callback
+			);
+
+		endfor;
+	}
+
+	//	-----------
+	//	This merely is responsible for form-submission validation of WordPress admin area submission.
+	//	It will mutate the submission data upon save and hand it off to the database after mutation.
+	//	If fields are not explicity placed here into the sanitized output then they will not be saved.
+	//	-----------
+	public function envoy_rest_api_email_routing_by_state_sanitize($input) {
+		$sanitary_values = array();
+
+		//	Pass this one text field straight through.
+		//	Don't treat this like the rest of the fields; don't lower-case it.
+		$sanitary_values['send_email_from_name_0'] = trim($input['send_email_from_name_0']);
+
+		//	Add our static field ids
+		$field_ids_to_sanitize = [
+			'test_email_address_0',
+			'default_email_address_0',
+			// 'send_email_from_name_0',	//	Don't treat this like the rest of the fields.
+			'send_email_from_email_0'
+		];
+
+		//	Add our dynamically generated field_ids
+		for( $i=0; $i<SELF::$MAXIMUM_MAPPING_VALUES_OF_FORM_CATEGORY_TO_EMAIL_ADDRESS; $i++):
+			$_field_id_1 = sprintf('category_%s_form_value_0', $i);
+			$_field_id_2 = sprintf('category_%s_email_address_0', $i);
+			$field_ids_to_sanitize[] = $_field_id_1;
+			$field_ids_to_sanitize[] = $_field_id_2;
+		endfor;
+
+		foreach( $field_ids_to_sanitize as $_field_id ):
+			if( isset( $input[$_field_id] ) ):
+				$sanitary_values[$_field_id] = strtolower(trim(sanitize_text_field( $input[$_field_id] )));
+			endif;
+		endforeach;
+
+		return $sanitary_values;
+	}
+
+	public function envoy_rest_api_email_routing_by_state_section_info() {
+	}
+
+	//	-----------
+	//	This merely is responsible for rendering the input field in the admin area.
+	//	-----------
+	public function test_email_address_0_callback() {
+		$field_id = 'test_email_address_0';
+		printf(
+			'<input class="regular-text" type="text" name="%s_option_name[%s]" id="%s" value="%s">
+			<div style="color:lightslategrey; font-style:italic;">Leave this BLANK IN PRODUCTION. When this is defined, all routing emails will go to this address instead of anything else.</div>',
+			SELF::$NS,
+			$field_id,
+			$field_id,
+			isset( $this->envoy_rest_api_email_routing_by_state_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_by_state_options[$field_id]) : ''
+		);
+	}
+	public function send_email_from_name_0_callback() {
+		$field_id = 'send_email_from_name_0';
+		printf(
+			'<input class="regular-text" type="text" name="%s_option_name[%s]" id="%s" value="%s">
+			<div style="color:lightslategrey; font-style:italic;">This will show as the email sender\'s Name.</div>',
+			SELF::$NS,
+			$field_id,
+			$field_id,
+			isset( $this->envoy_rest_api_email_routing_by_state_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_by_state_options[$field_id]) : ''
+		);
+	}
+
+	public function send_email_from_email_0_callback() {
+		$field_id = 'send_email_from_email_0';
+		printf(
+			'<input class="regular-text" type="text" name="%s_option_name[%s]" id="%s" value="%s">
+			<div style="color:lightslategrey; font-style:italic;">This will show as the email sender\'s Email Address.</div>',
+			SELF::$NS,
+			$field_id,
+			$field_id,
+			isset( $this->envoy_rest_api_email_routing_by_state_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_by_state_options[$field_id]) : ''
+		);
+	}
+	public function default_category_email_address_0_callback() {
+		$field_id = 'default_email_address_0';
+		printf(
+			'<input class="regular-text" type="text" name="%s_option_name[%s]" id="%s" value="%s">
+			<div style="color:black; font-style:italic;">A fallback; When a form data \'category\' value is received that mapping is NOT defined below, this default email address will receive the form submission data.</div>',
+			SELF::$NS,
+			$field_id,
+			$field_id,
+			isset( $this->envoy_rest_api_email_routing_by_state_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_by_state_options[$field_id]) : ''
+		);
+	}
+
+	public function category_field_value_callback($args) {
+		$field_id = $args['field_id'];
+		$text_color = $args['id'] % 2 == 0 ? 'cornflowerblue' : 'darkseagreen' ;
+		printf(
+			'<input class="regular-text" type="text" name="%s_option_name[%s]" id="%s" value="%s">
+			<div style="color:%s; font-style:italic;">Enter a "category" value to listen for in form submissions.</div>',
+			SELF::$NS,
+			$field_id,
+			$field_id,
+			isset( $this->envoy_rest_api_email_routing_by_state_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_by_state_options[$field_id]) : '',
+			$text_color	//	Info text - font color
+		);
+	}
+	public function category_email_address_callback($args) {
+		$field_id = $args['field_id'];
+		$text_color = $args['id'] % 2 == 0 ? 'cornflowerblue' : 'darkseagreen' ;
+		printf(
+			'<input class="regular-text" type="text" name="%s_option_name[%s]" id="%s" value="%s">
+			<div style="color:%s; font-style:italic;">Enter a corresponding email address or comma-separated email addresses</div>',
+			SELF::$NS,
+			$field_id,
+			$field_id,
+			isset( $this->envoy_rest_api_email_routing_by_state_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_by_state_options[$field_id]) : '',
+			$text_color	//	Info text - font color
+		);
+	}
+
+}
+if ( is_admin() )
+	$envoy_rest_api_email_routing_by_state = new EnvoyRestAPIEmailRoutingByState();
+
+/* 
+ * Retrieve this value with:
+ * $envoy_rest_api_email_routing_by_state_options = get_option( 'envoy_rest_api_email_routing_by_state_option_name' ); // Array of All Options
+ * $test_email_address_0 = $envoy_rest_api_email_routing_by_state_options['test_email_address_0']; // Test Email Address
+ */

@@ -1,0 +1,29 @@
+{
+  "name": "envoy/rest-api",
+  "description": "WeAreEnvoy's WordPress plugin to add api routes",
+  "type": "wordpress-plugin",
+  "license": "GPL-3.0+",
+  "authors": [{
+    "name": "WeAreEnvoy",
+    "email": "WebAdmin@WeAreEnvoy.com"
+  }],
+  "config": {
+    "optimize-autoloader": true,
+    "process-timeout": 0
+  },
+  "autoload": {
+    "psr-4": {
+      "EmailRoutingByState\\": "src/"
+    },
+    "classmap": [
+      "src/"
+    ]
+  },
+  "scripts": {
+  },
+  "require": {
+    "php": "^8.0"
+  },
+  "require-dev": {
+  }
+}
