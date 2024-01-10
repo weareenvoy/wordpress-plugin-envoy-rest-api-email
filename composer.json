@@ -1,5 +1,5 @@
 {
-  "name": "envoy/rest-api",
+  "name": "envoy/envoy-rest-api",
   "description": "WeAreEnvoy's WordPress plugin to add api routes",
   "type": "wordpress-plugin",
   "license": "GPL-3.0+",
