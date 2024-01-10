@@ -3,6 +3,41 @@
 This is a WordPress Plugin.
 It adds the ability to create REST API routes in a controlled, contained, & repeatable way.
 
+# How do I install this plugin using composer?
+
+Add this to your project's existing `composer.json`:
+```
+  "repositories": [
+
+    ...
+
+    {
+      "type": "vcs",
+      "url": "https://github.com/weareenvoy/wordpress-plugin-envoy-rest-api-email.git"
+    }
+
+    ...
+
+  ],
+```
+
+Then from the terminal, run:
+
+```
+composer require envoy/envoy-rest-api;
+```
+
+The plugin files will be placed into your project directory at:
+```
+/web/app/plugins/envoy-rest-api
+```
+
+Add this to your project's `.gitignore`:
+
+```
+**/plugins/envoy-rest-api
+```
+
 ## Existing API routes:
 
 ### __POST__ `/wp-json/envoy/route_emails_by_state`
