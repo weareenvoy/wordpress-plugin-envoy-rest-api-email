@@ -266,7 +266,7 @@ class EnvoyRestAPIEmailRoutingByState {
 		$field_id = 'default_email_address_0';
 		printf(
 			'<input class="regular-text" type="text" name="%s_option_name[%s]" id="%s" value="%s">
-			<div style="color:black; font-style:italic;">A fallback; When a form data \'category\' value is received that mapping is NOT defined below, this default email address will receive the form submission data.</div>',
+			<div style="color:black; font-style:italic;">A fallback; when a form data \'category\' value is received for which mapping is NOT defined below, this default email address will receive the form submission data.</div>',
 			SELF::$NS,
 			$field_id,
 			$field_id,
