@@ -195,7 +195,9 @@ class EmailRoutingByState extends WP_REST_Controller {
 		if( !$this->test_email_address ):
 
 			foreach($cc_addresses as $contact):
-				$headers[] = sprintf("Cc: %s",$contact['email']);
+				//	CC Addresses derived from comma-separated string values are not objects like the BCC list is
+				//	You may notice the difference here between how we handle CC versus BCC $contacts
+				$headers[] = sprintf("Cc: %s",$contact);
 			endforeach;
 			//	BCC
 			foreach($bcc_contacts as $contact):
