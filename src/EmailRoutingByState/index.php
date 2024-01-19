@@ -254,7 +254,7 @@ class EmailRoutingByState extends WP_REST_Controller {
 		endif;
 
 		//	Decide primary recipient based on the 'category' field value in the form data we received.
-		$recipient_email_by_category = $this->mapping_of_form_category_to_email_address[ $form_data['category'] ];
+		$recipient_email_by_category = @$this->mapping_of_form_category_to_email_address[ $form_data['category'] ];
 
 		if( !empty($recipient_email_by_category) ):
 			return $recipient_email_by_category;
