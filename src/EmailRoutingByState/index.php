@@ -72,8 +72,27 @@ class EmailRoutingByState extends WP_REST_Controller {
 				$routing_contacts = $this->getAcfGlobalSettingsRouting('provider_routing');
 				break;
 			default:
-				// Do nothing if not one of those categories
-				return new WP_REST_Response(SELF::$HTTP_RESPONSE_200__category, 200 );
+				//	Deliver emails to the contact(s) defined in this plugin's settings for 'category'
+				$email_result = $this->sendEmail($form_data);
+
+				//	Respond to network request
+				$data = [
+					'delivered_to_recipients_count' => count(explode(',', $this->lookupPrimaryEmailRecipient($form_data)))
+				];
+				//	If testing - append extra data for debugging
+				if( $this->test_email_address ):
+					$data['test_email_address']	=	$this->test_email_address;
+					$data['email_result']		=	$email_result;
+					$data["all_defined_mappings_of_category_field_to_email"]				=	$this->mapping_of_form_category_to_email_address;
+					$data['default_category_email_address']									=	$this->default_email_address;
+					$data['primary_recipient_from_category_mappings']						=	$this->lookupPrimaryEmailRecipient($form_data, true);
+				endif;
+
+				$response_http_status_code = $email_result ? 201 : 500 ;
+				$response = new WP_REST_Response( $data, $response_http_status_code );
+				$response->header( 'Access-Control-Allow-Origin', '*' );
+
+				return $response;
 		endswitch;
 
 		//	Further refine the list of contacts to align with the given state
@@ -235,7 +254,7 @@ class EmailRoutingByState extends WP_REST_Controller {
 		endif;
 
 		//	Decide primary recipient based on the 'category' field value in the form data we received.
-		$recipient_email_by_category = @$this->mapping_of_form_category_to_email_address[ $form_data['category'] ];
+		$recipient_email_by_category = $this->mapping_of_form_category_to_email_address[ $form_data['category'] ];
 
 		if( !empty($recipient_email_by_category) ):
 			return $recipient_email_by_category;
