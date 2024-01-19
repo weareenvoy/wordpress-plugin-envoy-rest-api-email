@@ -171,7 +171,7 @@ class EmailRoutingByState extends WP_REST_Controller {
 		return $routing_contacts;
 	}
 
-	private function sendEmail($form_data, Array $bcc_contacts){
+	private function sendEmail($form_data, Array $bcc_contacts = []){
 
 		$to_addresses_from_wordpress_settings = $this->lookupPrimaryEmailRecipient($form_data);
 		$to_addresses = array_map(
