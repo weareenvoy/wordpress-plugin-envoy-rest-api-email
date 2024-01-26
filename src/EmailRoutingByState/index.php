@@ -136,7 +136,7 @@ class EmailRoutingByState extends WP_REST_Controller {
 			$data["all_possible_routing_contacts__{$form_data['category']}"]		=	$routing_contacts;
 		endif;
 
-		$response_http_status_code = $email_result ? 201 : 500 ;
+		$response_http_status_code = $email_result['success'] ? 201 : 500 ;
 		$response = new WP_REST_Response( $data, $response_http_status_code );
 		$response->header( 'Access-Control-Allow-Origin', '*' );
 
