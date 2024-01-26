@@ -99,7 +99,10 @@ class EmailRoutingByState extends WP_REST_Controller {
 		//	Further refine the list of contacts to align with the given state
 		//		Guard against no 'state' being defined in the received form payload.
 		if( !@$form_data['state'] ):
-			return new WP_REST_Response(SELF::$HTTP_RESPONSE_400__state, 400 );
+			$response = new WP_REST_Response(SELF::$HTTP_RESPONSE_400__state, 400 );
+			$response->header( 'Access-Control-Allow-Origin', '*' );
+
+			return $response;
 		endif;
 		$state_object_derived_from_form = StateAbbreviations::getStateObjectFromNameOrAbbreviation( $form_data['state'] );
 
