@@ -25,10 +25,11 @@ class EmailRoutingByState extends WP_REST_Controller {
 		'message'		=>	"The form's 'state' field must be present & contain a valid state name or abbreviation."
 	];
 
-	private $EMAIL_FROM_NAME	=	NULL;						//	default
-	private $EMAIL_FROM_EMAIL	=	NULL;						//	default
-	private $test_email_address	=	NULL;						//	default
-	private $is_debug_mode		=	false;						//	default
+	private $EMAIL_FROM_NAME		=	NULL;					//	default
+	private $EMAIL_FROM_EMAIL		=	NULL;					//	default
+	private $default_email_address	=	NULL;					//	default
+	private $test_email_address		=	NULL;					//	default
+	private $is_debug_mode			=	false;					//	default
 	private $mapping_of_form_category_to_email_address	=	[];	//	default					//	default
 
 	public function __construct() {
@@ -281,7 +282,9 @@ class EmailRoutingByState extends WP_REST_Controller {
 		$wordpress_plugin_options		=	get_option( $wordpress_plugin_option_key ); // Array of All Options
 
 		//	WordPress setting that returns extra unformation in API responses; unsafe for production use.
-		$this->is_debug_mode			=	&boolval( $wordpress_plugin_options['is_debug_mode_0'] );
+		if( array_key_exists('is_debug_mode_0', $wordpress_plugin_options) ):
+			$this->is_debug_mode			=	boolval( $wordpress_plugin_options['is_debug_mode_0'] );
+		endif;
 
 		//	WordPress setting that defines a override test email address during debugging
 		$this->test_email_address		=	&$wordpress_plugin_options['test_email_address_0'];
