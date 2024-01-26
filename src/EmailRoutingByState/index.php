@@ -49,7 +49,8 @@ class EmailRoutingByState extends WP_REST_Controller {
 		register_rest_route( SELF::$NAMESPACE, 'route_emails_by_state', array(
 			array(
 				'methods'	=>	implode(', ', [WP_REST_Server::READABLE, WP_REST_Server::CREATABLE]),	//	GET, POST	//	We use GET for debugging. POST is what production will use.
-				'callback'	=>	array( $this, 'routeEmailsByState' )
+				'callback'	=>	array( $this, 'routeEmailsByState' ),
+				'permission_callback'	=>	'__return_true'
 			)
 		));
 
