@@ -28,6 +28,7 @@ class EmailRoutingByState extends WP_REST_Controller {
 	private $EMAIL_FROM_NAME	=	NULL;						//	default
 	private $EMAIL_FROM_EMAIL	=	NULL;						//	default
 	private $test_email_address	=	NULL;						//	default
+	private $is_debug_mode		=	false;						//	default
 	private $mapping_of_form_category_to_email_address	=	[];	//	default					//	default
 
 	public function __construct() {
@@ -80,7 +81,7 @@ class EmailRoutingByState extends WP_REST_Controller {
 					'delivered_to_recipients_count' => count(explode(',', $this->lookupPrimaryEmailRecipient($form_data)))
 				];
 				//	If testing - append extra data for debugging
-				if( $this->test_email_address ):
+				if( $this->is_debug_mode ):
 					$data['test_email_address']	=	$this->test_email_address;
 					$data['email_result']		=	$email_result;
 					$data["all_defined_mappings_of_category_field_to_email"]				=	$this->mapping_of_form_category_to_email_address;
@@ -119,7 +120,7 @@ class EmailRoutingByState extends WP_REST_Controller {
 		];
 
 		//	If testing - append extra data for debugging
-		if( $this->test_email_address ):
+		if( $this->is_debug_mode ):
 			$data['test_email_address']	=	$this->test_email_address;
 			$data['contacts']			=	$contacts_to_send_to;
 			$data['email_result']		=	$email_result;
@@ -274,6 +275,9 @@ class EmailRoutingByState extends WP_REST_Controller {
 		//	Load the array of options from WordPress for us to read values out of
 		$wordpress_plugin_option_key	=	sprintf('%s_option_name', EnvoyRestAPIEmailRoutingByState::$NS);
 		$wordpress_plugin_options		=	get_option( $wordpress_plugin_option_key ); // Array of All Options
+
+		//	WordPress setting that returns extra unformation in API responses; unsafe for production use.
+		$this->is_debug_mode			=	&boolval( $wordpress_plugin_options['is_debug_mode_0'] );
 
 		//	WordPress setting that defines a override test email address during debugging
 		$this->test_email_address		=	&$wordpress_plugin_options['test_email_address_0'];

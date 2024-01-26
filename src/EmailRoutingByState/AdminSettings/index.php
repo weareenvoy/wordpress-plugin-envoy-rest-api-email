@@ -50,9 +50,32 @@ class EnvoyRestAPIEmailRoutingByState {
 		$this->envoy_rest_api_email_routing_by_state_options = get_option( sprintf('%s_option_name', SELF::$NS) ); ?>
 
 		<div class="wrap">
-			<h2>Envoy Rest API - Email Routing By State</h2>
+			<h2>Envoy Rest API - Email Routing (by `category` & `state`)</h2>
 			<p></p>
+
 			<?php settings_errors(); ?>
+
+			<hr/>
+
+			<table class="wp-list-table widefat fixed striped">
+				<caption style="color:DodgerBlue; font-weight:900;">API Endpoint(s)</caption>
+				<thead>
+					<tr>
+						<th>Endpoint Method & Path</th>
+						<th>Headers</th>
+						<th>Description</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td><pre>POST /wp-json/envoy/route_emails_by_state</pre></td>
+						<td><pre>Content-Type: multipart/form-data; boundary=</pre></td>
+						<td>This receives a POST request containing a `cagegory` field from form data and relays the submitted data to email recipients defined in settings.</td>
+					</tr>
+				</tbody>
+			</table>
+
+			<hr/>
 
 			<form method="post" action="options.php">
 				<?php
@@ -112,6 +135,14 @@ class EnvoyRestAPIEmailRoutingByState {
 			'⚙️ Testing & Debugging ⚙️',									//	title
 			array( $this, sprintf('%s_section_info', SELF::$NS) ),	// callback
 			sprintf('%s-admin', SELF::$NS_HANDLE)					// page
+		);
+
+		add_settings_field(
+			'is_debug_mode_0',									// id
+			'⚠️ Include Debug Information in API Reponses',		// title
+			array( $this, 'is_debug_mode_0_callback' ),	// callback
+			sprintf('%s-admin', SELF::$NS_HANDLE),				// page
+			sprintf('%s_setting_section_testing', SELF::$NS)	// section
 		);
 
 		add_settings_field(
@@ -196,9 +227,11 @@ class EnvoyRestAPIEmailRoutingByState {
 		//	Pass this one text field straight through.
 		//	Don't treat this like the rest of the fields; don't lower-case it.
 		$sanitary_values['send_email_from_name_0'] = trim($input['send_email_from_name_0']);
+		// $sanitary_values['is_debug_mode_0'] = $input['is_debug_mode_0'];
 
 		//	Add our static field ids
 		$field_ids_to_sanitize = [
+			'is_debug_mode_0',
 			'test_email_address_0',
 			'default_email_address_0',
 			// 'send_email_from_name_0',	//	Don't treat this like the rest of the fields.
@@ -228,6 +261,17 @@ class EnvoyRestAPIEmailRoutingByState {
 	//	-----------
 	//	This merely is responsible for rendering the input field in the admin area.
 	//	-----------
+	public function is_debug_mode_0_callback() {
+		$field_id = 'is_debug_mode_0';
+		printf(
+			'<input class="regular-checkbox" type="checkbox" name="%s_option_name[%s]" id="%s" %s value="1">
+			<div style="color:lightslategrey; font-style:italic;">Leave this OFF IN PRODUCTION. If enabled, extra debugging information will be included in API responses.</div>',
+			SELF::$NS,
+			$field_id,
+			$field_id,
+			isset( $this->envoy_rest_api_email_routing_by_state_options[$field_id] ) && esc_attr( $this->envoy_rest_api_email_routing_by_state_options[$field_id]) == 1 ? 'checked' : ''
+		);
+	}
 	public function test_email_address_0_callback() {
 		$field_id = 'test_email_address_0';
 		printf(
