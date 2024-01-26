@@ -67,6 +67,12 @@ class EmailRoutingByState extends WP_REST_Controller {
 		//	Retreive list of pertinent contacts that this form data should be forwarded to
 		$routing_contacts = [];
 
+		//	The flow of this switch statement is a little odd with how/where this function returns. So read this.
+		//	The original overall purpose of this function was to read desired contact information based on form 'category'.
+		//	But at some point a need arose that required dynamic definitions of of the mapping for form 'category' to desired contact information.
+		//	So you're seeing both functionalities here.
+		//	The non-default cases just set the variables for the code after the switch statement to execute and then return.
+		//	But if the default case is executed... then it reads the mapping from plugin options and returns early without executing further code in this function that was originally needed.
 		switch( @$form_data['category'] ):
 			case 'claimant':
 				$routing_contacts = $this->getAcfGlobalSettingsRouting('claimant_routing');
@@ -91,7 +97,7 @@ class EmailRoutingByState extends WP_REST_Controller {
 					$data['primary_recipient_from_category_mappings']						=	$this->lookupPrimaryEmailRecipient($form_data, true);
 				endif;
 
-				$response_http_status_code = $email_result ? 201 : 500 ;
+				$response_http_status_code = $email_result['success'] ? 201 : 500 ;
 				$response = new WP_REST_Response( $data, $response_http_status_code );
 				$response->header( 'Access-Control-Allow-Origin', '*' );
 
@@ -287,20 +293,20 @@ class EmailRoutingByState extends WP_REST_Controller {
 		endif;
 
 		//	WordPress setting that defines a override test email address during debugging
-		$this->test_email_address		=	&$wordpress_plugin_options['test_email_address_0'];
+		$this->test_email_address		=	@$wordpress_plugin_options['test_email_address_0'];
 
 		//	WordPress setting that defines a default email address during debugging
-		$this->default_email_address	=	&$wordpress_plugin_options['default_email_address_0'];
+		$this->default_email_address	=	@$wordpress_plugin_options['default_email_address_0'];
 
-		$this->EMAIL_FROM_NAME			=	&$wordpress_plugin_options['send_email_from_name_0'];
-		$this->EMAIL_FROM_EMAIL			=	&$wordpress_plugin_options['send_email_from_email_0'];
+		$this->EMAIL_FROM_NAME			=	@$wordpress_plugin_options['send_email_from_name_0'];
+		$this->EMAIL_FROM_EMAIL			=	@$wordpress_plugin_options['send_email_from_email_0'];
 
 		//	WordPress setting(s) that define a mapping of form category to destination email address
 		for( $i=0; $i<EnvoyRestAPIEmailRoutingByState::$MAXIMUM_MAPPING_VALUES_OF_FORM_CATEGORY_TO_EMAIL_ADDRESS; $i++):
 			$_category_field_id = sprintf('category_%s_form_value_0', $i);
-			$_category_field_value = &$wordpress_plugin_options[$_category_field_id];
+			$_category_field_value = @$wordpress_plugin_options[$_category_field_id];
 			$_email_field_id = sprintf('category_%s_email_address_0', $i);
-			$_email_field_value = &$wordpress_plugin_options[$_email_field_id];
+			$_email_field_value = @$wordpress_plugin_options[$_email_field_id];
 
 			if( !empty($_category_field_value) && !empty($_email_field_value) ):
 				$this->mapping_of_form_category_to_email_address[$_category_field_value] = $_email_field_value;
