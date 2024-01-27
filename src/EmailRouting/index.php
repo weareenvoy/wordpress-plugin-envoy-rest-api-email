@@ -303,6 +303,15 @@ class EmailRouting extends WP_REST_Controller {
 		$wordpress_plugin_option_key	=	sprintf('%s_option_name', EnvoyRestAPIEmailRouting::$NS);
 		$wordpress_plugin_options		=	get_option( $wordpress_plugin_option_key ); // Array of All Options
 
+		//	Guard against no plugin options having been saved by a user in the admin area yet.
+		if( !is_array($wordpress_plugin_options) ):
+			return $this;
+		endif;
+
+		//	----------------
+		//	Normal Execution
+		//	----------------
+
 		//	WordPress setting that returns extra unformation in API responses; unsafe for production use.
 		if( array_key_exists('is_debug_mode_0', $wordpress_plugin_options) ):
 			$this->is_debug_mode			=	boolval( $wordpress_plugin_options['is_debug_mode_0'] );
