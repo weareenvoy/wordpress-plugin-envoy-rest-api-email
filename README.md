@@ -50,3 +50,9 @@ Add this to your project's `.gitignore`:
 > \
 > The `category` will determine if routing contacts will be read from the user-defined `claimant` or `provider` table within the WordPress admin settings.\
 > Then within that resulting table, the `state` field will determine which of those contacts will receive copies of the email (aka '_email routing_').
+
+### __POST__ `/wp-json/envoy/route_emails_by_category`
+
+> This endpoint receives a web-browser's `contact-us` form submission payload and performs the role of notifying others of the submission.\
+> \
+> Part of this role is related to a user-defined email routing 'category' to 'email' settings exists in the WordPress admin plugin settings for this plugin. The 'category' field in the form submission is the important field that relates to looking-up appropriate contacts to route the submission to.

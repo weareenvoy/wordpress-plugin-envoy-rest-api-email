@@ -10,10 +10,10 @@ require_once( __DIR__ . '/StateAbbreviations/index.php' );
 // use WP_REST_Controller;
 // use WP_REST_Server;
 //	Right now, the following classes do not have an autoloader; they are already loaded from a `require_once()` which is called in a parent.
-// use EnvoyRestAPIEmailRoutingByState;
+// use EnvoyRestAPIEmailRouting;
 // use StateAbbreviations;
 
-class EmailRoutingByState extends WP_REST_Controller {
+class EmailRouting extends WP_REST_Controller {
 
 	static $NAMESPACE = 'envoy';
 	static $HTTP_RESPONSE_200__category = [
@@ -55,6 +55,14 @@ class EmailRoutingByState extends WP_REST_Controller {
 			)
 		));
 
+		register_rest_route( SELF::$NAMESPACE, 'route_emails_by_category', array(
+			array(
+				'methods'	=>	implode(', ', [WP_REST_Server::READABLE, WP_REST_Server::CREATABLE]),	//	GET, POST	//	We use GET for debugging. POST is what production will use.
+				'callback'	=>	array( $this, 'routeEmailsByCategory' ),
+				'permission_callback'	=>	'__return_true'
+			)
+		));
+
 	}
 
 	//	----------
@@ -81,27 +89,7 @@ class EmailRoutingByState extends WP_REST_Controller {
 				$routing_contacts = $this->getAcfGlobalSettingsRouting('provider_routing');
 				break;
 			default:
-				//	Deliver emails to the contact(s) defined in this plugin's settings for 'category'
-				$email_result = $this->sendEmail($form_data);
-
-				//	Respond to network request
-				$data = [
-					'delivered_to_recipients_count' => count(explode(',', $this->lookupPrimaryEmailRecipient($form_data)))
-				];
-				//	If testing - append extra data for debugging
-				if( $this->is_debug_mode ):
-					$data['test_email_address']	=	$this->test_email_address;
-					$data['email_result']		=	$email_result;
-					$data["all_defined_mappings_of_category_field_to_email"]				=	$this->mapping_of_form_category_to_email_address;
-					$data['default_category_email_address']									=	$this->default_email_address;
-					$data['primary_recipient_from_category_mappings']						=	$this->lookupPrimaryEmailRecipient($form_data, true);
-				endif;
-
-				$response_http_status_code = $email_result['success'] ? 201 : 500 ;
-				$response = new WP_REST_Response( $data, $response_http_status_code );
-				$response->header( 'Access-Control-Allow-Origin', '*' );
-
-				return $response;
+				return $this->routeEmailsByCategory( $request );
 		endswitch;
 
 		//	Further refine the list of contacts to align with the given state
@@ -140,6 +128,34 @@ class EmailRoutingByState extends WP_REST_Controller {
 			$data['primary_recipient_from_category_mappings']						=	$this->lookupPrimaryEmailRecipient($form_data, true);
 			$data["all_possible_routing_contacts_count__{$form_data['category']}"]	=	count($routing_contacts);
 			$data["all_possible_routing_contacts__{$form_data['category']}"]		=	$routing_contacts;
+		endif;
+
+		$response_http_status_code = $email_result['success'] ? 201 : 500 ;
+		$response = new WP_REST_Response( $data, $response_http_status_code );
+		$response->header( 'Access-Control-Allow-Origin', '*' );
+
+		return $response;
+
+	}
+
+	public function routeEmailsByCategory( WP_REST_Request $request ){
+
+		$form_data = $request->get_params();
+
+		//	Deliver emails to the contact(s) defined in this plugin's settings for 'category'
+		$email_result = $this->sendEmail($form_data);
+
+		//	Respond to network request
+		$data = [
+			'delivered_to_recipients_count' => count(explode(',', $this->lookupPrimaryEmailRecipient($form_data)))
+		];
+		//	If testing - append extra data for debugging
+		if( $this->is_debug_mode ):
+			$data['test_email_address']	=	$this->test_email_address;
+			$data['email_result']		=	$email_result;
+			$data["all_defined_mappings_of_category_field_to_email"]				=	$this->mapping_of_form_category_to_email_address;
+			$data['default_category_email_address']									=	$this->default_email_address;
+			$data['primary_recipient_from_category_mappings']						=	$this->lookupPrimaryEmailRecipient($form_data, true);
 		endif;
 
 		$response_http_status_code = $email_result['success'] ? 201 : 500 ;
@@ -284,7 +300,7 @@ class EmailRoutingByState extends WP_REST_Controller {
 	private function getPluginSettingsFromWordPress(){
 
 		//	Load the array of options from WordPress for us to read values out of
-		$wordpress_plugin_option_key	=	sprintf('%s_option_name', EnvoyRestAPIEmailRoutingByState::$NS);
+		$wordpress_plugin_option_key	=	sprintf('%s_option_name', EnvoyRestAPIEmailRouting::$NS);
 		$wordpress_plugin_options		=	get_option( $wordpress_plugin_option_key ); // Array of All Options
 
 		//	WordPress setting that returns extra unformation in API responses; unsafe for production use.
@@ -302,7 +318,7 @@ class EmailRoutingByState extends WP_REST_Controller {
 		$this->EMAIL_FROM_EMAIL			=	@$wordpress_plugin_options['send_email_from_email_0'];
 
 		//	WordPress setting(s) that define a mapping of form category to destination email address
-		for( $i=0; $i<EnvoyRestAPIEmailRoutingByState::$MAXIMUM_MAPPING_VALUES_OF_FORM_CATEGORY_TO_EMAIL_ADDRESS; $i++):
+		for( $i=0; $i<EnvoyRestAPIEmailRouting::$MAXIMUM_MAPPING_VALUES_OF_FORM_CATEGORY_TO_EMAIL_ADDRESS; $i++):
 			$_category_field_id = sprintf('category_%s_form_value_0', $i);
 			$_category_field_value = @$wordpress_plugin_options[$_category_field_id];
 			$_email_field_id = sprintf('category_%s_email_address_0', $i);

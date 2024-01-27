@@ -8,9 +8,9 @@
 if( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
 // TO-DO: Create auto-loader so we don't have to require_once()
-require_once __DIR__ . '/src/EmailRoutingByState/index.php';
-require_once __DIR__ . '/src/EmailRoutingByState/AdminSettings/index.php';
+require_once __DIR__ . '/src/EmailRouting/index.php';
+require_once __DIR__ . '/src/EmailRouting/AdminSettings/index.php';
 
 add_action( 'rest_api_init', function(){
-    $router = new EmailRoutingByState();
+    $router = new EmailRouting();
 });

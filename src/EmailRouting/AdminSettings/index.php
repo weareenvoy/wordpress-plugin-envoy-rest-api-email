@@ -5,11 +5,11 @@
  * These contents were heavily modified after generation so avoid copy/pasting new output from the generator.
  */
 
-class EnvoyRestAPIEmailRoutingByState {
+class EnvoyRestAPIEmailRouting {
 
 	static $MAXIMUM_MAPPING_VALUES_OF_FORM_CATEGORY_TO_EMAIL_ADDRESS = 5;
-	static $NS			=	'envoy_rest_api_email_routing_by_state';
-	static $NS_HANDLE	=	'envoy-rest-api-email-routing-by-state';
+	static $NS			=	'envoy_rest_api_email_routing';
+	static $NS_HANDLE	=	'envoy-rest-api-email-routing';
 
 	private $envoy_rest_api_email_routing_by_state_options;
 
@@ -34,7 +34,7 @@ class EnvoyRestAPIEmailRoutingByState {
 		//  -- This adds a sub-level menu item under an existing top-level menu item --
 		add_submenu_page(
 			is_network_admin() ? 'settings.php' : 'options-general.php' , // parent_slug
-			'Envoy Rest API - Email Routing By State', // page_title
+			'Envoy Rest API - Email Routing', // page_title
 			'Form Routing Emails', // menu_title
 			'manage_options',
 			SELF::$NS_HANDLE, // menu_slug
@@ -70,7 +70,12 @@ class EnvoyRestAPIEmailRoutingByState {
 					<tr>
 						<td><pre>POST /wp-json/envoy/route_emails_by_state</pre></td>
 						<td><pre>Content-Type: multipart/form-data; boundary=</pre></td>
-						<td>This receives a POST request containing a `cagegory` field from form data and relays the submitted data to email recipients defined in settings.</td>
+						<td>This receives a POST request containing a `category` & `state` field from form data and relays the submitted data to email recipients defined in WordPress AdvancedCustomFields plugin option tables / settings.</td>
+					</tr>
+					<tr>
+						<td><pre>POST /wp-json/envoy/route_emails_by_category</pre></td>
+						<td><pre>Content-Type: multipart/form-data; boundary=</pre></td>
+						<td>This receives a POST request containing a `category` field from form data and relays the submitted data to email recipients defined in plugin settings.</td>
 					</tr>
 				</tbody>
 			</table>
@@ -347,7 +352,7 @@ class EnvoyRestAPIEmailRoutingByState {
 
 }
 if ( is_admin() )
-	$envoy_rest_api_email_routing_by_state = new EnvoyRestAPIEmailRoutingByState();
+	$envoy_rest_api_email_routing_by_state = new EnvoyRestAPIEmailRouting();
 
 /* 
  * Retrieve this value with:
