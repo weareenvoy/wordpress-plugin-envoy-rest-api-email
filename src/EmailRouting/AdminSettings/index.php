@@ -11,14 +11,14 @@ class EnvoyRestAPIEmailRouting {
 	static $NS			=	'envoy_rest_api_email_routing';
 	static $NS_HANDLE	=	'envoy-rest-api-email-routing';
 
-	private $envoy_rest_api_email_routing_by_state_options;
+	private $envoy_rest_api_email_routing_options;
 
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, sprintf('%s_add_plugin_page', SELF::$NS) ) );
 		add_action( 'admin_init', array( $this, sprintf('%s_page_init', SELF::$NS) ) );
 	}
 
-	public function envoy_rest_api_email_routing_by_state_add_plugin_page() {
+	public function envoy_rest_api_email_routing_add_plugin_page() {
 
 		//  -- This adds a top-level menu item --
 		//	add_menu_page(
@@ -26,7 +26,7 @@ class EnvoyRestAPIEmailRouting {
 		//		'Envoy Rest API - Email Routing By State', // menu_title
 		//		'manage_options', // capability
 		//		'envoy-rest-api-email-routing-by-state', // menu_slug
-		//		array( $this, 'envoy_rest_api_email_routing_by_state_create_admin_page' ), // function
+		//		array( $this, 'envoy_rest_api_email_routing_create_admin_page' ), // function
 		//		'dashicons-admin-generic', // icon_url
 		//		80 // position
 		//	);
@@ -46,8 +46,8 @@ class EnvoyRestAPIEmailRouting {
 	//	-----------
 	//	This merely is responsible for rendering the wrapper hml form contains input fields in the admin area.
 	//	-----------
-	public function envoy_rest_api_email_routing_by_state_create_admin_page() {
-		$this->envoy_rest_api_email_routing_by_state_options = get_option( sprintf('%s_option_name', SELF::$NS) ); ?>
+	public function envoy_rest_api_email_routing_create_admin_page() {
+		$this->envoy_rest_api_email_routing_options = get_option( sprintf('%s_option_name', SELF::$NS) ); ?>
 
 		<div class="wrap">
 			<h2>Envoy Rest API - Email Routing (by `category` & `state`)</h2>
@@ -98,7 +98,7 @@ class EnvoyRestAPIEmailRouting {
 	//		-	The setting section that contains that field
 	//		-	The setting configuration that connects the field to the saved value in the database
 	//	-------
-	public function envoy_rest_api_email_routing_by_state_page_init() {
+	public function envoy_rest_api_email_routing_page_init() {
 		register_setting(
 			sprintf('%s_option_group', SELF::$NS), // option_group
 			sprintf('%s_option_name', SELF::$NS), // option_name
@@ -226,7 +226,7 @@ class EnvoyRestAPIEmailRouting {
 	//	It will mutate the submission data upon save and hand it off to the database after mutation.
 	//	If fields are not explicity placed here into the sanitized output then they will not be saved.
 	//	-----------
-	public function envoy_rest_api_email_routing_by_state_sanitize($input) {
+	public function envoy_rest_api_email_routing_sanitize($input) {
 		$sanitary_values = array();
 
 		//	Pass this one text field straight through.
@@ -260,7 +260,7 @@ class EnvoyRestAPIEmailRouting {
 		return $sanitary_values;
 	}
 
-	public function envoy_rest_api_email_routing_by_state_section_info() {
+	public function envoy_rest_api_email_routing_section_info() {
 	}
 
 	//	-----------
@@ -274,7 +274,7 @@ class EnvoyRestAPIEmailRouting {
 			SELF::$NS,
 			$field_id,
 			$field_id,
-			isset( $this->envoy_rest_api_email_routing_by_state_options[$field_id] ) && esc_attr( $this->envoy_rest_api_email_routing_by_state_options[$field_id]) == 1 ? 'checked' : ''
+			isset( $this->envoy_rest_api_email_routing_options[$field_id] ) && esc_attr( $this->envoy_rest_api_email_routing_options[$field_id]) == 1 ? 'checked' : ''
 		);
 	}
 	public function test_email_address_0_callback() {
@@ -285,7 +285,7 @@ class EnvoyRestAPIEmailRouting {
 			SELF::$NS,
 			$field_id,
 			$field_id,
-			isset( $this->envoy_rest_api_email_routing_by_state_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_by_state_options[$field_id]) : ''
+			isset( $this->envoy_rest_api_email_routing_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_options[$field_id]) : ''
 		);
 	}
 	public function send_email_from_name_0_callback() {
@@ -296,7 +296,7 @@ class EnvoyRestAPIEmailRouting {
 			SELF::$NS,
 			$field_id,
 			$field_id,
-			isset( $this->envoy_rest_api_email_routing_by_state_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_by_state_options[$field_id]) : ''
+			isset( $this->envoy_rest_api_email_routing_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_options[$field_id]) : ''
 		);
 	}
 
@@ -308,7 +308,7 @@ class EnvoyRestAPIEmailRouting {
 			SELF::$NS,
 			$field_id,
 			$field_id,
-			isset( $this->envoy_rest_api_email_routing_by_state_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_by_state_options[$field_id]) : ''
+			isset( $this->envoy_rest_api_email_routing_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_options[$field_id]) : ''
 		);
 	}
 	public function default_category_email_address_0_callback() {
@@ -319,7 +319,7 @@ class EnvoyRestAPIEmailRouting {
 			SELF::$NS,
 			$field_id,
 			$field_id,
-			isset( $this->envoy_rest_api_email_routing_by_state_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_by_state_options[$field_id]) : ''
+			isset( $this->envoy_rest_api_email_routing_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_options[$field_id]) : ''
 		);
 	}
 
@@ -332,7 +332,7 @@ class EnvoyRestAPIEmailRouting {
 			SELF::$NS,
 			$field_id,
 			$field_id,
-			isset( $this->envoy_rest_api_email_routing_by_state_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_by_state_options[$field_id]) : '',
+			isset( $this->envoy_rest_api_email_routing_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_options[$field_id]) : '',
 			$text_color	//	Info text - font color
 		);
 	}
@@ -345,17 +345,17 @@ class EnvoyRestAPIEmailRouting {
 			SELF::$NS,
 			$field_id,
 			$field_id,
-			isset( $this->envoy_rest_api_email_routing_by_state_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_by_state_options[$field_id]) : '',
+			isset( $this->envoy_rest_api_email_routing_options[$field_id] ) ? esc_attr( $this->envoy_rest_api_email_routing_options[$field_id]) : '',
 			$text_color	//	Info text - font color
 		);
 	}
 
 }
 if ( is_admin() )
-	$envoy_rest_api_email_routing_by_state = new EnvoyRestAPIEmailRouting();
+	$envoy_rest_api_email_routing = new EnvoyRestAPIEmailRouting();
 
 /* 
  * Retrieve this value with:
- * $envoy_rest_api_email_routing_by_state_options = get_option( 'envoy_rest_api_email_routing_by_state_option_name' ); // Array of All Options
- * $test_email_address_0 = $envoy_rest_api_email_routing_by_state_options['test_email_address_0']; // Test Email Address
+ * $envoy_rest_api_email_routing_options = get_option( 'envoy_rest_api_email_routing_option_name' ); // Array of All Options
+ * $test_email_address_0 = $envoy_rest_api_email_routing_options['test_email_address_0']; // Test Email Address
  */
