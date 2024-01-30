@@ -57,6 +57,16 @@ class EnvoyRestAPIEmailRouting {
 
 			<hr/>
 
+			<form method="post" action="options.php">
+				<?php
+					settings_fields( sprintf('%s_option_group', SELF::$NS) );
+					do_settings_sections( sprintf('%s-admin', SELF::$NS_HANDLE) );
+					submit_button();
+				?>
+			</form>
+
+			<hr/>
+
 			<table class="wp-list-table widefat fixed striped">
 				<caption style="color:DodgerBlue; font-weight:900;">API Endpoint(s)</caption>
 				<thead>
@@ -80,15 +90,6 @@ class EnvoyRestAPIEmailRouting {
 				</tbody>
 			</table>
 
-			<hr/>
-
-			<form method="post" action="options.php">
-				<?php
-					settings_fields( sprintf('%s_option_group', SELF::$NS) );
-					do_settings_sections( sprintf('%s-admin', SELF::$NS_HANDLE) );
-					submit_button();
-				?>
-			</form>
 		</div>
 	<?php }
 
@@ -118,7 +119,7 @@ class EnvoyRestAPIEmailRouting {
 
 		add_settings_field(
 			'send_email_from_name_0',								// id
-			'📇 Send Email From Name',								// title
+			'📇 *Send from Email Name',								// title
 			array( $this, 'send_email_from_name_0_callback'),		// callback
 			sprintf('%s-admin', SELF::$NS_HANDLE),					// page
 			sprintf('%s_setting_section_email_sending', SELF::$NS)	// section
@@ -126,36 +127,10 @@ class EnvoyRestAPIEmailRouting {
 
 		add_settings_field(
 			'send_email_from_email_0',								// id
-			'📧 Send Email From Email',								// title
+			'📧 *Send from Email Address',								// title
 			array( $this, 'send_email_from_email_0_callback' ),		// callback
 			sprintf('%s-admin', SELF::$NS_HANDLE),					// page
 			sprintf('%s_setting_section_email_sending', SELF::$NS)	// section
-		);
-
-		//	----------------------------
-		//	Testing & Debugging Settings
-		//	----------------------------
-		add_settings_section(
-			sprintf('%s_setting_section_testing', SELF::$NS),		// id
-			'⚙️ Testing & Debugging ⚙️',									//	title
-			array( $this, sprintf('%s_section_info', SELF::$NS) ),	// callback
-			sprintf('%s-admin', SELF::$NS_HANDLE)					// page
-		);
-
-		add_settings_field(
-			'is_debug_mode_0',									// id
-			'⚠️ Include Debug Information in API Reponses',		// title
-			array( $this, 'is_debug_mode_0_callback' ),	// callback
-			sprintf('%s-admin', SELF::$NS_HANDLE),				// page
-			sprintf('%s_setting_section_testing', SELF::$NS)	// section
-		);
-
-		add_settings_field(
-			'test_email_address_0',								// id
-			'⚠️ Test Email - Debugging Override',				// title
-			array( $this, 'test_email_address_0_callback' ),	// callback
-			sprintf('%s-admin', SELF::$NS_HANDLE),				// page
-			sprintf('%s_setting_section_testing', SELF::$NS)	// section
 		);
 
 		//	----------------------
@@ -170,7 +145,7 @@ class EnvoyRestAPIEmailRouting {
 
 		add_settings_field(
 			'default_email_address_0',											// id
-			'📧 Default Category Email Address',			// title
+			'📧 *Default recipient Email Address',			// title
 			array( $this, 'default_category_email_address_0_callback'),	// callback
 			sprintf('%s-admin', SELF::$NS_HANDLE),				// page
 			sprintf('%s_setting_section_mappings_general', SELF::$NS)			// section
@@ -219,6 +194,33 @@ class EnvoyRestAPIEmailRouting {
 			);
 
 		endfor;
+
+		//	----------------------------
+		//	Testing & Debugging Settings
+		//	----------------------------
+		add_settings_section(
+			sprintf('%s_setting_section_testing', SELF::$NS),		// id
+			'⚙️ Testing & Debugging ⚙️',									//	title
+			array( $this, sprintf('%s_section_info', SELF::$NS) ),	// callback
+			sprintf('%s-admin', SELF::$NS_HANDLE)					// page
+		);
+
+		add_settings_field(
+			'is_debug_mode_0',									// id
+			'⚠️ Include Debug Information in API Reponses',		// title
+			array( $this, 'is_debug_mode_0_callback' ),	// callback
+			sprintf('%s-admin', SELF::$NS_HANDLE),				// page
+			sprintf('%s_setting_section_testing', SELF::$NS)	// section
+		);
+
+		add_settings_field(
+			'test_email_address_0',								// id
+			'⚠️ Test Email - Debugging Override',				// title
+			array( $this, 'test_email_address_0_callback' ),	// callback
+			sprintf('%s-admin', SELF::$NS_HANDLE),				// page
+			sprintf('%s_setting_section_testing', SELF::$NS)	// section
+		);
+
 	}
 
 	//	-----------

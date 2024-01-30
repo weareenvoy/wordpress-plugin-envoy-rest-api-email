@@ -24,6 +24,10 @@ class EmailRouting extends WP_REST_Controller {
 		'status_code'	=>	400,
 		'message'		=>	"The form's 'state' field must be present & contain a valid state name or abbreviation."
 	];
+	static $HTTP_RESPONSE_503__configuration = [
+		'status_code'	=>	503,
+		'message'		=>	"The plugin that hosts this endpoint is missing settings that should be configured in the admin area."
+	];
 
 	private $EMAIL_FROM_NAME		=	NULL;					//	default
 	private $EMAIL_FROM_EMAIL		=	NULL;					//	default
@@ -65,10 +69,33 @@ class EmailRouting extends WP_REST_Controller {
 
 	}
 
+	//	@return	{Bool}	False - no guard needed | True - guard says to take action
+	private function guardAgainstIncompleteSettings():Bool{
+		$required_setting_ids = [
+			'EMAIL_FROM_NAME',
+			'EMAIL_FROM_EMAIL',
+			'default_email_address',
+		];
+		foreach($required_setting_ids as $_setting_id ):
+			$_is_missing_setting_value = !boolval($this->{$_setting_id});
+			if( $_is_missing_setting_value ):
+				return true;
+			endif;
+		endforeach;
+
+		return false;
+	}
+
 	//	----------
 	//	Handler(s)
 	//	----------
 	public function routeEmailsByState( WP_REST_Request $request ){
+
+		if( $this->guardAgainstIncompleteSettings() ):
+			$response = new WP_REST_Response(SELF::$HTTP_RESPONSE_503__configuration, 503 );
+			$response->header( 'Access-Control-Allow-Origin', '*' );
+			return $response;
+		endif;
 
 		$form_data = $request->get_params();
 
@@ -139,6 +166,12 @@ class EmailRouting extends WP_REST_Controller {
 	}
 
 	public function routeEmailsByCategory( WP_REST_Request $request ){
+
+		if( $this->guardAgainstIncompleteSettings() ):
+			$response = new WP_REST_Response(SELF::$HTTP_RESPONSE_503__configuration, 503 );
+			$response->header( 'Access-Control-Allow-Origin', '*' );
+			return $response;
+		endif;
 
 		$form_data = $request->get_params();
 
