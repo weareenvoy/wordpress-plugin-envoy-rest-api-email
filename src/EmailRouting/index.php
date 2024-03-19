@@ -28,6 +28,9 @@ class EmailRouting extends WP_REST_Controller {
 		'status_code'	=>	503,
 		'message'		=>	"The plugin that hosts this endpoint is missing settings that should be configured in the admin area."
 	];
+	static $INTERNAL_WP_HTTP_REQUEST_FIELD_KEYS = [
+		'q'
+	];
 
 	private $EMAIL_FROM_NAME		=	NULL;					//	default
 	private $EMAIL_FROM_EMAIL		=	NULL;					//	default
@@ -269,7 +272,7 @@ class EmailRouting extends WP_REST_Controller {
 		//	----------
 		//	Build Body
 		//	----------
-		$message = implode("\r\n", [
+		$message_rows = [
 			sprintf("From: %s %s - <%s>",
 				@$form_data['first_name'],
 				@$form_data['last_name'],
@@ -291,16 +294,39 @@ class EmailRouting extends WP_REST_Controller {
 			sprintf("Message: %s",			@$form_data['message']),
 			sprintf("Routing Names: %s",	implode(', ',array_map(function($_c){return $_c['name'];},$bcc_contacts))),
 			sprintf("Routing Emails: %s",	implode(', ',array_map(function($_c){return $_c['email'];},$bcc_contacts))),
-		]);
+			"\r\n",
+			"All Submitted Fields:",
+			"\r\n",
+		];
 
-		$success = wp_mail( $to, $subject, $message, $headers );
+		//	Sometimes this form data comes from a web source where extra fields are
+		//	collected from the user. We need to show whatever extra fields came.
+		//	You're asking yourself why we list most fields hard-coded just above if
+		//	we're going to list them all again here. It is because the form/format of this email message
+		//	has been established for while and we want recipients that have been receiving
+		//	this for a while to still have some familiarity in what they are receiving.
+		foreach( $form_data AS $_key => $_value ):
+			if( in_array($_key, SELF::$INTERNAL_WP_HTTP_REQUEST_FIELD_KEYS) ):
+				continue;	//	Skips keys we recognize as internal that wouldn't be in the form payload.
+			endif;
+			$message_rows[] = sprintf("%s: %s", $_key, $_value);
+		endforeach;
+
+		//	Join the message rows together to they are compatible with email
+		$message_text = implode("\r\n", $message_rows);
+
+		//	Attempt delivery of the email
+		//		Note: If using AWS SES to send mail, it is possible to get a success from this
+		//		invokation but still fail within AWS.
+		//		This can happen for things like AWS SES responding with the 'sender' not being verified.
+		$success = wp_mail( $to, $subject, $message_text, $headers );
 
 		return [
 			'success'	=>	$success,
 			'to'		=>	$to,
 			'subject'	=>	$subject,
 			'headers'	=>	$headers,
-			'message'	=>	$message,
+			'message'	=>	$message_text,
 			'logging'	=>	[
 				'to_addresses_from_raw_wordpress_settings'	=> $to_addresses_from_wordpress_settings,
 				'cc_addresses'	=>	$cc_addresses,

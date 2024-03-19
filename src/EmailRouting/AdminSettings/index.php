@@ -306,7 +306,7 @@ class EnvoyRestAPIEmailRouting {
 		$field_id = 'send_email_from_email_0';
 		printf(
 			'<input class="regular-text" type="text" name="%s_option_name[%s]" id="%s" value="%s">
-			<div style="color:lightslategrey; font-style:italic;">This will show as the email sender\'s Email Address.</div>',
+			<div style="color:lightslategrey; font-style:italic;">This will show as the email sender\'s Email Address.<br />If using AWS SES to send email, this value MUST be a "verified sender" within AWS SES.<br />Otherwise emails will fail to send.</div>',
 			SELF::$NS,
 			$field_id,
 			$field_id,
