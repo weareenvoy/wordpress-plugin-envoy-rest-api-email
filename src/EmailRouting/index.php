@@ -131,11 +131,22 @@ class EmailRouting extends WP_REST_Controller {
 			return $response;
 		endif;
 		$state_object_derived_from_form = StateAbbreviations::getStateObjectFromNameOrAbbreviation( $form_data['state'] );
-
-		$contacts_to_send_to = array_filter($routing_contacts, function($contact) use ($state_object_derived_from_form): Bool{
+		// TODO I added "if" block. Because strcasecmp can't compare string and null? `PHP Warning:  Trying to access array offset on value of type null`
+		$contacts_to_send_to = array_filter($routing_contacts, function($contact) use ($state_object_derived_from_form): Bool {
+			if ( !isset($state_object_derived_from_form['abbreviation']) ) {
+				return false;
+			}
 			$contact_pertains_to_state_in_form_data = 0 === strcasecmp(trim($contact['state_code']), $state_object_derived_from_form['abbreviation']);
 			return $contact_pertains_to_state_in_form_data;
 		});
+
+		//  Use default email if state is invalid, or no contacts found for the given state
+		if( empty($contacts_to_send_to) ):
+			$contacts_to_send_to[] = [
+					'email' => $this->default_email_address,
+					'name' => 'default recipient' //TODO line 304 needs "name", `PHP Warning:  Undefined array key "name" on line 304`
+			];
+		endif;
 
 		//	Deliver emails
 		$email_result = $this->sendEmail($form_data, $contacts_to_send_to);
