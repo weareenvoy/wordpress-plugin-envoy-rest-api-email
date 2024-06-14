@@ -132,10 +132,23 @@ class EmailRouting extends WP_REST_Controller {
 		endif;
 		$state_object_derived_from_form = StateAbbreviations::getStateObjectFromNameOrAbbreviation( $form_data['state'] );
 
-		$contacts_to_send_to = array_filter($routing_contacts, function($contact) use ($state_object_derived_from_form): Bool{
-			$contact_pertains_to_state_in_form_data = 0 === strcasecmp(trim($contact['state_code']), $state_object_derived_from_form['abbreviation']);
-			return $contact_pertains_to_state_in_form_data;
-		});
+		if ( !isset($state_object_derived_from_form['abbreviation']) ) : 
+			$contacts_to_send_to = []; 
+		else:
+			$contacts_to_send_to = array_filter($routing_contacts, function($contact) use ($state_object_derived_from_form): Bool {
+				$contact_pertains_to_state_in_form_data = 0 === strcasecmp(trim($contact['state_code']), $state_object_derived_from_form['abbreviation']);
+				return $contact_pertains_to_state_in_form_data;
+			});
+		endif;
+
+
+		//  Use default email if state is invalid, or no contacts found for the given state
+		if( empty($contacts_to_send_to) ):
+			$contacts_to_send_to[] = [
+					'email' => $this->default_email_address,
+					'name' => 'default recipient'
+			];
+		endif;
 
 		//	Deliver emails
 		$email_result = $this->sendEmail($form_data, $contacts_to_send_to);
