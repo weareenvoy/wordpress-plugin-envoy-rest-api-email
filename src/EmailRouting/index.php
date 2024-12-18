@@ -142,7 +142,7 @@ class EmailRouting extends WP_REST_Controller {
 		endif;
 
 		// Trigger manual error log to Sentry
-		if ( empty($contacts_to_send_to) && empty($this->default_email_address) ):
+		if ( empty($contacts_to_send_to) ):
 			$error = [
 				'type'    => 'StateRoutingError',
 				'message' => 'An issue occurred while routing state emails.',
@@ -201,27 +201,13 @@ class EmailRouting extends WP_REST_Controller {
 		endif;
 
 		$form_data = $request->get_params();
-		$delivered_to_recipients_count = count(explode(',', $this->lookupPrimaryEmailRecipient($form_data)));
-
-		// Trigger manual error log to Sentry
-		if ( empty($delivered_to_recipients_count) ):
-			$error = [
-				'type'    => 'CategoryRoutingError',
-				'message' => 'An issue occurred while routing category emails.',
-				'stacktrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS),
-			];
-
-			$response = $this->deliverErrorToSentryIo($error, $form_data);
-
-			return $response;
-		endif;
 
 		//	Deliver emails to the contact(s) defined in this plugin's settings for 'category'
 		$email_result = $this->sendEmail($form_data);
 
 		//	Respond to network request
 		$data = [
-			'delivered_to_recipients_count' => $delivered_to_recipients_count
+			'delivered_to_recipients_count' => count(explode(',', $this->lookupPrimaryEmailRecipient($form_data)))
 		];
 		//	If testing - append extra data for debugging
 		if( $this->is_debug_mode ):
