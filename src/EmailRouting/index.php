@@ -141,20 +141,16 @@ class EmailRouting extends WP_REST_Controller {
 			});
 		endif;
 
-		// Trigger manual error log to Sentry
 		if ( empty($contacts_to_send_to) ):
+			// Trigger manual error log to Sentry
 			$error = [
 				'type'    => 'StateRoutingError',
-				'message' => 'An issue occurred while routing state emails.',
+				'message' => 'State contact emails not found for routing.',
 				'stacktrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS),
 			];
 
-			$response = $this->deliverErrorToSentryIo($error, $form_data);
+			$this->deliverErrorToSentryIo($error, $form_data);
 
-			return $response;
-		endif;
-
-		if ( empty($contacts_to_send_to) ):
 			// If contacts are empty but a default email address is available
 			$contacts_to_send_to[] = [
 				'email' => $this->default_email_address,
