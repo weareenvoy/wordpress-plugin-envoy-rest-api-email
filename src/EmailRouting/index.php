@@ -141,33 +141,26 @@ class EmailRouting extends WP_REST_Controller {
 			});
 		endif;
 
-		if (empty($contacts_to_send_to) && empty($this->default_email_address)) {
-			// Trigger error delivery to Sentry
+		// Trigger manual error log to Sentry
+		if ( empty($contacts_to_send_to) && empty($this->default_email_address) ):
 			$error = [
 				'type'    => 'StateRoutingError',
 				'message' => 'An issue occurred while routing state emails.',
 				'stacktrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS),
-				'extra' => [
-					'email' => $form_data['email'],
-					'category' => $form_data['category'],
-					'subject' => $form_data['subject'],
-					'state' => $form_data['state'],
-					'formId' => $form_data['formId'],
-				]
 			];
 
-			$response = $this->deliverErrorToSentryIo($error);
-			error_log(print_r($response, true));
-			return;
-		}
+			$response = $this->deliverErrorToSentryIo($error, $form_data);
 
-		if (empty($contacts_to_send_to)) {
+			return $response;
+		endif;
+
+		if ( empty($contacts_to_send_to) ):
 			// If contacts are empty but a default email address is available
 			$contacts_to_send_to[] = [
 				'email' => $this->default_email_address,
 				'name'  => 'default recipient'
 			];
-		}
+		endif;
 
 		//	Deliver emails
 		$email_result = $this->sendEmail($form_data, $contacts_to_send_to);
@@ -197,7 +190,6 @@ class EmailRouting extends WP_REST_Controller {
 		$response->header( 'Access-Control-Allow-Origin', '*' );
 
 		return $response;
-
 	}
 
 	public function routeEmailsByCategory( WP_REST_Request $request ){
@@ -209,13 +201,27 @@ class EmailRouting extends WP_REST_Controller {
 		endif;
 
 		$form_data = $request->get_params();
+		$delivered_to_recipients_count = count(explode(',', $this->lookupPrimaryEmailRecipient($form_data)));
+
+		// Trigger manual error log to Sentry
+		if ( empty($delivered_to_recipients_count) ):
+			$error = [
+				'type'    => 'CategoryRoutingError',
+				'message' => 'An issue occurred while routing category emails.',
+				'stacktrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS),
+			];
+
+			$response = $this->deliverErrorToSentryIo($error, $form_data);
+
+			return $response;
+		endif;
 
 		//	Deliver emails to the contact(s) defined in this plugin's settings for 'category'
 		$email_result = $this->sendEmail($form_data);
 
 		//	Respond to network request
 		$data = [
-			'delivered_to_recipients_count' => count(explode(',', $this->lookupPrimaryEmailRecipient($form_data)))
+			'delivered_to_recipients_count' => $delivered_to_recipients_count
 		];
 		//	If testing - append extra data for debugging
 		if( $this->is_debug_mode ):
@@ -432,7 +438,8 @@ class EmailRouting extends WP_REST_Controller {
 		return $this;
 	}
 
-	private function deliverErrorToSentryIo($error){
+	private function deliverErrorToSentryIo($error, $form_data){
+
 		// Set config to sentry credentials
 		$CONFIG = [
 			'SENTRY' => [
@@ -471,7 +478,13 @@ class EmailRouting extends WP_REST_Controller {
 				'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
 				'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown',
 			],
-			'extra' => $error['extra'],
+			'extra' => [
+				'email' => $form_data['email'] ?? '',
+				'category' => $form_data['category'] ?? '',
+				'subject' => $form_data['subject'] ?? '',
+				'state' => $form_data['state'] ?? '',
+				'formId' => $form_data['formId'] ?? '',
+			]
 		];
 
 		$url = "https://" . $CONFIG['SENTRY']['HOST'] . "/api/" . $CONFIG['SENTRY']['PROJECT_ID'] . "/store/";
@@ -489,25 +502,29 @@ class EmailRouting extends WP_REST_Controller {
 			'timeout' => 10,
 		]);
 
-		// Handle response
 		if (is_wp_error($response)) {
 			$error_message = $response->get_error_message();
-
-			return [
+			$data = [
 				'success' => false,
 				'message' => 'Sentry request failed',
 				'error'   => $error_message
 			];
+			$response_http_status_code = 500;
 		} else {
 			$httpCode = wp_remote_retrieve_response_code($response);
 			$responseBody = wp_remote_retrieve_body($response);
-
-			return [
+			$data = [
 				'success' => true,
 				'status_code' => $httpCode,
 				'response_body' => $responseBody
 			];
+			$response_http_status_code = $httpCode;
 		}
+
+		$response = new WP_REST_Response($data, $response_http_status_code);
+		$response->header('Access-Control-Allow-Origin', '*');
+
+		return $response;
 	}
 
 }//class
