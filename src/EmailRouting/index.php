@@ -141,12 +141,20 @@ class EmailRouting extends WP_REST_Controller {
 			});
 		endif;
 
+		if ( empty($contacts_to_send_to) ):
+			// Trigger manual error log to Sentry
+			$error = [
+				'type'    => 'StateRoutingError',
+				'message' => 'State contact emails not found for routing.',
+				'stacktrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS),
+			];
 
-		//  Use default email if state is invalid, or no contacts found for the given state
-		if( empty($contacts_to_send_to) ):
+			$this->deliverErrorToSentryIo($error, $form_data);
+
+			// If contacts are empty but a default email address is available
 			$contacts_to_send_to[] = [
-					'email' => $this->default_email_address,
-					'name' => 'default recipient'
+				'email' => $this->default_email_address,
+				'name'  => 'default recipient'
 			];
 		endif;
 
@@ -178,7 +186,6 @@ class EmailRouting extends WP_REST_Controller {
 		$response->header( 'Access-Control-Allow-Origin', '*' );
 
 		return $response;
-
 	}
 
 	public function routeEmailsByCategory( WP_REST_Request $request ){
@@ -411,6 +418,95 @@ class EmailRouting extends WP_REST_Controller {
 		endfor;
 
 		return $this;
+	}
+
+	private function deliverErrorToSentryIo($error, $form_data){
+
+		// Set config to sentry credentials
+		$CONFIG = [
+			'SENTRY' => [
+				'ENVIRONMENT_TAG' => 'development',
+				'HOST' => 'o4506237335699456.ingest.sentry.io',
+				'PROJECT_ID' => '4506237359751169',
+				'PUBLIC_KEY' => 'e3a8ce142a93c0bfed51d9ab9523d668'
+			]
+		];
+
+		// Construct the payload
+		$payload = [
+			'exception' => [
+				'values' => [
+					[
+						'type' => $error['type'],
+						'value' => $error['message'],
+						'stacktrace' => [
+							'frames' => array_map(function ($frame) {
+								return [
+									'filename' => $frame['file'] ?? 'Unknown',
+									'function' => $frame['function'] ?? 'N/A',
+									'lineno'   => $frame['line'] ?? 0,
+								];
+							}, $error['stacktrace'])
+						]
+					]
+				]
+			],
+			'message' => $error['message'],
+			'level' => 'error',
+			'tags' => [
+				'environment' => $CONFIG['SENTRY']['ENVIRONMENT_TAG'],
+			],
+			'user' => [
+				'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
+				'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown',
+			],
+			'extra' => [
+				'email' => $form_data['email'] ?? '',
+				'category' => $form_data['category'] ?? '',
+				'subject' => $form_data['subject'] ?? '',
+				'state' => $form_data['state'] ?? '',
+				'formId' => $form_data['formId'] ?? '',
+			]
+		];
+
+		$url = "https://" . $CONFIG['SENTRY']['HOST'] . "/api/" . $CONFIG['SENTRY']['PROJECT_ID'] . "/store/";
+
+		// Headers
+		$headers = [
+			'Authorization' => 'Basic ' . base64_encode($CONFIG['SENTRY']['PUBLIC_KEY'] . ':'),
+			'Content-Type'  => 'application/json',
+		];
+
+		// Send the request using wp_remote_post
+		$response = wp_remote_post($url, [
+			'headers' => $headers,
+			'body'    => json_encode($payload),
+			'timeout' => 10,
+		]);
+
+		if (is_wp_error($response)) {
+			$error_message = $response->get_error_message();
+			$data = [
+				'success' => false,
+				'message' => 'Sentry request failed',
+				'error'   => $error_message
+			];
+			$response_http_status_code = 500;
+		} else {
+			$httpCode = wp_remote_retrieve_response_code($response);
+			$responseBody = wp_remote_retrieve_body($response);
+			$data = [
+				'success' => true,
+				'status_code' => $httpCode,
+				'response_body' => $responseBody
+			];
+			$response_http_status_code = $httpCode;
+		}
+
+		$response = new WP_REST_Response($data, $response_http_status_code);
+		$response->header('Access-Control-Allow-Origin', '*');
+
+		return $response;
 	}
 
 }//class
