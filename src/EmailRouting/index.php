@@ -425,12 +425,13 @@ class EmailRouting extends WP_REST_Controller {
 		// Set config to sentry credentials
 		$CONFIG = [
 			'SENTRY' => [
-				'ENVIRONMENT_TAG' => 'development',
-				'HOST' => 'o4506237335699456.ingest.sentry.io',
-				'PROJECT_ID' => '4506237359751169',
-				'PUBLIC_KEY' => 'e3a8ce142a93c0bfed51d9ab9523d668'
+				'ENVIRONMENT_TAG' => WP_ENV,
+				'HOST' => WP_SENTRY_HOST, // same for all 3 brands, specific to overall sentry account
+				'PROJECT_ID' => WP_SENTRY_PROJECT_ID, // is different for each brand
+				'PUBLIC_KEY' => WP_SENTRY_PUBLIC_KEY, // is different for each brand
 			]
 		];
+		throw new \Exception('Missing Sentry configuration value from env. Requires all of WP_SENTRY_HOST, WP_SENTRY_PROJECT_ID, and WP_SENTRY_PUBLIC_KEY', 1);
 
 		// Construct the payload
 		$payload = [
