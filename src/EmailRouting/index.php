@@ -431,7 +431,9 @@ class EmailRouting extends WP_REST_Controller {
 				'PUBLIC_KEY' => WP_SENTRY_PUBLIC_KEY, // is different for each brand
 			]
 		];
-		throw new \Exception('Missing Sentry configuration value from env. Requires all of WP_SENTRY_HOST, WP_SENTRY_PROJECT_ID, and WP_SENTRY_PUBLIC_KEY', 1);
+		if (empty(WP_SENTRY_HOST) || empty(WP_SENTRY_PROJECT_ID) || empty(WP_SENTRY_PUBLIC_KEY)) {
+			throw new \Exception('Missing Sentry configuration value from env. Requires all of WP_SENTRY_HOST, WP_SENTRY_PROJECT_ID, and WP_SENTRY_PUBLIC_KEY', 1);
+		}
 
 		// Construct the payload
 		$payload = [
