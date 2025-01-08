@@ -4,12 +4,13 @@
  * https://jeremyhixon.com/tool/wordpress-option-page-generator/
  * These contents were heavily modified after generation so avoid copy/pasting new output from the generator.
  */
-
+require_once( __DIR__ . '/../Utilities/index.php' );
 class EnvoyRestAPIEmailRouting {
 
 	static $MAXIMUM_MAPPING_VALUES_OF_FORM_CATEGORY_TO_EMAIL_ADDRESS = 5;
 	static $NS			=	'envoy_rest_api_email_routing';
 	static $NS_HANDLE	=	'envoy-rest-api-email-routing';
+	static $ERROR_MESSAGE_INVALID_FIELD_PAIRING = 'Both category and email are required if one is defined.';
 
 	private $envoy_rest_api_email_routing_options;
 
@@ -91,6 +92,15 @@ class EnvoyRestAPIEmailRouting {
 			</table>
 
 		</div>
+
+		<?php if(!$this->is_field_pairing_valid()): ?>
+			<script>
+			window.addEventListener('load',function(){
+				window.alert(<?php echo json_encode(self::$ERROR_MESSAGE_INVALID_FIELD_PAIRING); ?>);
+			},false);
+			</script>
+		<?php endif; ?>
+
 	<?php }
 
 	//	-------
@@ -259,7 +269,38 @@ class EnvoyRestAPIEmailRouting {
 			endif;
 		endforeach;
 
+		if (!$this ->is_field_pairing_valid()): 
+			add_settings_error(
+					sprintf('%s_option_group', SELF::$NS),
+					'category_email_required',
+					SELF::$ERROR_MESSAGE_INVALID_FIELD_PAIRING,
+					'error'
+			);
+
+		endif;
+
 		return $sanitary_values;
+	}
+
+	private function is_field_pairing_valid() {
+		for ($i = 0; $i < SELF::$MAXIMUM_MAPPING_VALUES_OF_FORM_CATEGORY_TO_EMAIL_ADDRESS; $i++):
+			
+			$category_value = Envoy_RestAPI_Utilities::getPluginSettingValue(sprintf('category_%s_form_value_0', $i));
+			$category_email = Envoy_RestAPI_Utilities::getPluginSettingValue(sprintf('category_%s_email_address_0', $i));
+			// If a category target value is set but email address is empty, or vice versa.
+			$conditions = [
+				(int)empty($category_value), 
+				(int)empty($category_email),
+			];
+			$conditions_that_are_true = array_sum($conditions);
+
+			if ($conditions_that_are_true === 1):
+					return false;
+			endif;
+			
+		endfor;
+
+		return true;
 	}
 
 	public function envoy_rest_api_email_routing_section_info() {
