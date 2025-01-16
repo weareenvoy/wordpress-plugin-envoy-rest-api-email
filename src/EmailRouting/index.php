@@ -6,7 +6,7 @@
 //		https://www.youtube.com/watch?v=iyhIbJyWTZY
 
 require_once( __DIR__ . '/StateAbbreviations/index.php' );
-
+require_once( __DIR__ . '/Utilities/Sentry/index.php' );
 // use WP_REST_Controller;
 // use WP_REST_Server;
 //	Right now, the following classes do not have an autoloader; they are already loaded from a `require_once()` which is called in a parent.
@@ -149,7 +149,7 @@ class EmailRouting extends WP_REST_Controller {
 				'stacktrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS),
 			];
 
-			$this->deliverErrorToSentryIo($error, $form_data);
+			Envoy_Sentry::deliverErrorToSentryIo($error, $form_data);
 
 			// If contacts are empty but a default email address is available
 			$contacts_to_send_to[] = [
@@ -420,96 +420,5 @@ class EmailRouting extends WP_REST_Controller {
 		return $this;
 	}
 
-	private function deliverErrorToSentryIo($error, $form_data){
-
-		// Set config to sentry credentials
-		$CONFIG = [
-			'SENTRY' => [
-				'ENVIRONMENT_TAG' => WP_ENV,
-				'HOST' => WP_SENTRY_HOST, // same for all 3 brands, specific to overall sentry account
-				'PROJECT_ID' => WP_SENTRY_PROJECT_ID, // is different for each brand
-				'PUBLIC_KEY' => WP_SENTRY_PUBLIC_KEY, // is different for each brand
-			]
-		];
-		if (empty(WP_SENTRY_HOST) || empty(WP_SENTRY_PROJECT_ID) || empty(WP_SENTRY_PUBLIC_KEY)) {
-			throw new \Exception('Missing Sentry configuration value from env. Requires all of WP_SENTRY_HOST, WP_SENTRY_PROJECT_ID, and WP_SENTRY_PUBLIC_KEY', 1);
-		}
-
-		// Construct the payload
-		$payload = [
-			'exception' => [
-				'values' => [
-					[
-						'type' => $error['type'],
-						'value' => $error['message'],
-						'stacktrace' => [
-							'frames' => array_map(function ($frame) {
-								return [
-									'filename' => $frame['file'] ?? 'Unknown',
-									'function' => $frame['function'] ?? 'N/A',
-									'lineno'   => $frame['line'] ?? 0,
-								];
-							}, $error['stacktrace'])
-						]
-					]
-				]
-			],
-			'message' => $error['message'],
-			'level' => 'error',
-			'tags' => [
-				'environment' => $CONFIG['SENTRY']['ENVIRONMENT_TAG'],
-			],
-			'user' => [
-				'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
-				'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown',
-			],
-			'extra' => [
-				'email' => $form_data['email'] ?? '',
-				'category' => $form_data['category'] ?? '',
-				'subject' => $form_data['subject'] ?? '',
-				'state' => $form_data['state'] ?? '',
-				'formId' => $form_data['formId'] ?? '',
-			]
-		];
-
-		$url = "https://" . $CONFIG['SENTRY']['HOST'] . "/api/" . $CONFIG['SENTRY']['PROJECT_ID'] . "/store/";
-
-		// Headers
-		$headers = [
-			'Authorization' => 'Basic ' . base64_encode($CONFIG['SENTRY']['PUBLIC_KEY'] . ':'),
-			'Content-Type'  => 'application/json',
-		];
-
-		// Send the request using wp_remote_post
-		$response = wp_remote_post($url, [
-			'headers' => $headers,
-			'body'    => json_encode($payload),
-			'timeout' => 10,
-		]);
-
-		if (is_wp_error($response)) {
-			$error_message = $response->get_error_message();
-			$data = [
-				'success' => false,
-				'message' => 'Sentry request failed',
-				'error'   => $error_message
-			];
-			$response_http_status_code = 500;
-		} else {
-			$httpCode = wp_remote_retrieve_response_code($response);
-			$responseBody = wp_remote_retrieve_body($response);
-			$data = [
-				'success' => true,
-				'status_code' => $httpCode,
-				'response_body' => $responseBody
-			];
-			$response_http_status_code = $httpCode;
-		}
-
-		$response = new WP_REST_Response($data, $response_http_status_code);
-		$response->header('Access-Control-Allow-Origin', '*');
-
-		return $response;
-	}
 
 }//class
