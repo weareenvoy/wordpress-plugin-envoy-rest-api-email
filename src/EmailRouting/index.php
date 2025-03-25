@@ -298,26 +298,42 @@ class EmailRouting extends WP_REST_Controller {
 				@$form_data['last_name'],
 				@$form_data['email'],
 			),
-			sprintf("Category: %s",			$form_data['category']),
+			sprintf("Category: %s", $form_data['category']),
 			"\r\n",
 			"Message Body:",
 			"\r\n",
-			sprintf("Category: %s",			$form_data['category']),
-			sprintf("Subject: %s",			@$form_data['subject']),
-			sprintf("First Name: %s",		@$form_data['first_name']),
-			sprintf("Last Name: %s",		@$form_data['last_name']),
-			sprintf("Email: %s",			@$form_data['email']),
-			sprintf("Phone: %s",			@$form_data['phone']),
-			sprintf("Company: %s",			@$form_data['company']),
-			sprintf("City: %s",				@$form_data['city']),
-			sprintf("State: %s",			$form_data['state']),
-			sprintf("Message: %s",			@$form_data['message']),
-			sprintf("Routing Names: %s",	implode(', ',array_map(function($_c){return $_c['name'];},$bcc_contacts))),
-			sprintf("Routing Emails: %s",	implode(', ',array_map(function($_c){return $_c['email'];},$bcc_contacts))),
+			sprintf("Category: %s", $form_data['category']),
+			sprintf("Subject: %s", @$form_data['subject']),
+		];
+
+		// Add claimant-specific fields if category is claimant
+		if ($form_data['category'] === 'claimant') {
+			$message_rows[] = sprintf("Type of Claim: %s", @$form_data['claim_type']);
+			$message_rows[] = sprintf("I am: %s", @$form_data['claim_profile']);
+			$message_rows[] = sprintf("Claim Number: %s", @$form_data['claim_number']);
+			$message_rows[] = sprintf("Preferred Contact Method: %s", @$form_data['preferred_contact']);
+		}
+
+		// Add general fields
+		$message_rows = array_merge($message_rows, [
+			sprintf("First Name: %s", @$form_data['first_name']),
+			sprintf("Last Name: %s", @$form_data['last_name']),
+			sprintf("Email: %s", @$form_data['email']),
+			sprintf("Phone: %s", @$form_data['phone']),
+			sprintf("Company: %s", @$form_data['company']),
+			sprintf("City: %s", @$form_data['city']),
+			sprintf("State: %s", $form_data['state']),
+			sprintf("Message: %s", @$form_data['message']),
+			sprintf("Routing Names: %s", implode(', ', array_map(function($_c) {
+				return $_c['name'];
+			}, $bcc_contacts))),
+			sprintf("Routing Emails: %s", implode(', ', array_map(function($_c) {
+				return $_c['email'];
+			}, $bcc_contacts))),
 			"\r\n",
 			"All Submitted Fields:",
 			"\r\n",
-		];
+		]);
 
 		//	Sometimes this form data comes from a web source where extra fields are
 		//	collected from the user. We need to show whatever extra fields came.
