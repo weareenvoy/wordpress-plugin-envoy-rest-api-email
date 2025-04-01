@@ -60,7 +60,8 @@ class StateAbbreviations {
 			[ 'name' => 'Washington',		'abbreviation' => 'WA' ],
 			[ 'name' => 'West Virginia',	'abbreviation' => 'WV' ],
 			[ 'name' => 'Wisconsin',		'abbreviation' => 'WI' ],
-			[ 'name' => 'Wyoming',			'abbreviation' => 'WY' ]
+			[ 'name' => 'Wyoming',			'abbreviation' => 'WY' ],
+			[ 'name' => 'Non-US',			'abbreviation' => 'Non-US' ],
 		];
 
 		static function getStateObjectFromNameOrAbbreviation(String $given_string){
