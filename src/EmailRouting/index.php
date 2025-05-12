@@ -39,6 +39,9 @@ class EmailRouting extends WP_REST_Controller {
 	private $is_debug_mode			=	false;					//	default
 	private $mapping_of_form_category_to_email_address	=	[];	//	default					//	default
 
+	private $request_header_user_agent	=	NULL;
+	private $request_header_forwarded_host	=	NULL;
+
 	public function __construct() {
 
 		$this->registerApiRoutes();
@@ -100,6 +103,7 @@ class EmailRouting extends WP_REST_Controller {
 			return $response;
 		endif;
 
+		$this->getHeadersFromRequest($request);
 		$form_data = $request->get_params();
 
 		//	Retreive list of pertinent contacts that this form data should be forwarded to
@@ -147,6 +151,7 @@ class EmailRouting extends WP_REST_Controller {
 				'type'    => 'StateRoutingError',
 				'message' => 'State contact emails not found for routing.',
 				'stacktrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS),
+				'extra' => [ 'x_forwarded_host' => $this->request_header_forwarded_host, 'user_agent' => $this->request_header_user_agent ]
 			];
 
 			Envoy_Sentry::deliverErrorToSentryIo($error, $form_data);
@@ -196,6 +201,7 @@ class EmailRouting extends WP_REST_Controller {
 			return $response;
 		endif;
 
+		$this->getHeadersFromRequest($request);
 		$form_data = $request->get_params();
 
 		//	Deliver emails to the contact(s) defined in this plugin's settings for 'category'
@@ -255,6 +261,25 @@ class EmailRouting extends WP_REST_Controller {
 		return $routing_contacts;
 	}
 
+	private function generateEmailSubject($form_data) {
+		$is_forwared_from_chatbot = stripos($this->request_header_forwarded_host, 'chatbot') !== false;
+		$form_id = isset($form_data['formId']) ? $form_data['formId'] : null;
+		switch (true):
+			case $is_forwared_from_chatbot:
+				$subject = 'Contact Us - Chatbot';
+				break;
+			
+			case !empty($form_id):
+				$subject = sprintf('Contact Us - Contact Form (%s)', $form_id);
+				break;
+
+			default:
+				$subject = 'Contact Us - Contact Form';
+				break;
+		endswitch;
+		return $subject;
+	}
+
 	private function sendEmail($form_data, Array $bcc_contacts = []){
 
 		$to_addresses_from_wordpress_settings = $this->lookupPrimaryEmailRecipient($form_data);
@@ -268,7 +293,7 @@ class EmailRouting extends WP_REST_Controller {
 		//	'TO' might have comma-separated values in it. We take the first one as 'TO' and put the rest into 'CC'.
 		$to = reset($to_addresses);
 		$cc_addresses = array_slice($to_addresses,1);
-		$subject = 'Contact Us - Form Request';
+		$subject = $this->generateEmailSubject($form_data);
 
 		//	-------------
 		//	Build Headers
@@ -436,5 +461,11 @@ class EmailRouting extends WP_REST_Controller {
 		return $this;
 	}
 
+	private function getHeadersFromRequest(WP_REST_Request $request){
+		$this->request_header_forwarded_host = $request->get_header('x-forwarded-host');
+		$this->request_header_user_agent = $request->get_header('user-agent');
+
+		return $this;
+	}
 
 }//class
