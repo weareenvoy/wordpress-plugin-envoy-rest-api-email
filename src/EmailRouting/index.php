@@ -138,6 +138,7 @@ class EmailRouting extends WP_REST_Controller {
 
 		if ( !isset($state_object_derived_from_form['abbreviation']) ) : 
 			$contacts_to_send_to = []; 
+			$form_data['invalid_state'] = true;
 		else:
 			$contacts_to_send_to = array_filter($routing_contacts, function($contact) use ($state_object_derived_from_form): Bool {
 				$contact_pertains_to_state_in_form_data = 0 === strcasecmp(trim($contact['state_code']), $state_object_derived_from_form['abbreviation']);
@@ -263,10 +264,12 @@ class EmailRouting extends WP_REST_Controller {
 
 	private function generateEmailSubject($form_data) {
 		$is_forwared_from_chatbot = stripos($this->request_header_forwarded_host, 'chatbot') !== false;
-		$form_id = isset($form_data['formId']) ? $form_data['formId'] : null;
+		$form_id = isset($form_data['formId']) ? $form_data['formId'] : null;	
+		$invalid_state = isset($form_data['invalid_state']) ? $form_data['invalid_state'] : false;
+
 		switch (true):
 			case $is_forwared_from_chatbot:
-				$subject = 'Contact Us - Chatbot';
+				$subject = 'Contact Us - Chatbot' . ($invalid_state ? ' (Invalid State)' : '');
 				break;
 			
 			case !empty($form_id):
@@ -326,17 +329,35 @@ class EmailRouting extends WP_REST_Controller {
 			sprintf("Category: %s", $form_data['category']),
 			"\r\n",
 			"Message Body:",
-			"\r\n",
+			"\r\n"
+		];
+
+		// Add invalid state message if applicable
+		if (isset($form_data['invalid_state'])) {
+			$message_rows[] = sprintf("The state selected by the user is not valid. Please forward this email to the appropriate contact person for assistance.");
+			$message_rows[] = "\r\n";
+		}
+
+		// Add remaining message rows
+		$message_rows = array_merge($message_rows, [
 			sprintf("Category: %s", $form_data['category']),
 			sprintf("Subject: %s", @$form_data['subject']),
-		];
+		]);
 
 		// Add claimant-specific fields if category is claimant
 		if ($form_data['category'] === 'claimant') {
-			$message_rows[] = sprintf("Type of Claim: %s", @$form_data['claim_type']);
-			$message_rows[] = sprintf("I am: %s", @$form_data['claim_profile']);
-			$message_rows[] = sprintf("Claim Number: %s", @$form_data['claim_number']);
-			$message_rows[] = sprintf("Preferred Contact Method: %s", @$form_data['preferred_contact']);
+			if (!empty($form_data['claim_type'])) {
+				$message_rows[] = sprintf("Type of Claim: %s", $form_data['claim_type']);
+			}
+			if (!empty($form_data['claim_profile'])) {
+				$message_rows[] = sprintf("I am: %s", $form_data['claim_profile']);
+			}
+			if (!empty($form_data['claim_number'])) {
+				$message_rows[] = sprintf("Claim Number: %s", $form_data['claim_number']);
+			}
+			if (!empty($form_data['preferred_contact'])) {
+				$message_rows[] = sprintf("Preferred Contact Method: %s", $form_data['preferred_contact']);
+			}
 		}
 
 		// Add general fields
